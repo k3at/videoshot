@@ -1,0 +1,601 @@
+/* ================================================================
+   videoshot — أنماط احترافية لواجهة مكالمات الفيديو
+   підтримка ثنائية اللغة (العربية / الإنجليزية) مع اتجاه ديناميكي
+   ================================================================ */
+
+/* --- متغيرات الألوان والتصميم --- */
+:root {
+  --bg: #0b0f19;
+  --bg-grad: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #0f172a 100%);
+  --panel: rgba(30, 41, 59, 0.7);
+  --panel-hover: rgba(51, 65, 85, 0.7);
+  --border: rgba(255, 255, 255, 0.10);
+  --border-focus: rgba(99, 102, 241, 0.55);
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+  --accent: #6366f1;
+  --accent-glow: rgba(99, 102, 241, 0.35);
+  --accent-hover: #4f46e5;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+  --warning: #f59e0b;
+  --glass: rgba(255, 255, 255, 0.03);
+  --shadow: 0 24px 48px rgba(0, 0, 0, 0.55);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --transition: 220ms ease;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  direction: rtl;
+  lang: ar;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-grad);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Tahoma, "Helvetica Neue", Arial, "Noto Sans Arabic", "Noto Sans", sans-serif;
+  direction: rtl;
+  min-height: 100vh;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+button {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  outline: none;
+}
+
+/* --- اتجاه ديناميكي حسب اللغة --- */
+[dir="rtl"] { text-align: right; }
+[dir="ltr"] { text-align: left; }
+
+/* --- أدوات عامة --- */
+.page {
+  display: none;
+  height: 100vh;
+  width: 100%;
+}
+.page.active { display: block; }
+.hidden { display: none !important; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all var(--transition);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.btn:active { transform: scale(0.985); }
+.btn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+.btn-primary:hover { background: var(--accent-hover); }
+
+.btn-outline {
+  background: var(--glass);
+  color: var(--text);
+  border-color: var(--border);
+}
+.btn-outline:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.25); }
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+.btn-danger:hover { background: var(--danger-hover); }
+
+.btn-sm { padding: 0.5rem 0.9rem; font-size: 0.85rem; }
+.btn-block { width: 100%; }
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transition: all var(--transition);
+}
+.icon-btn:hover { background: var(--panel-hover); color: var(--text); border-color: rgba(255,255,255,0.2); }
+.icon-btn.small { width: 30px; height: 30px; font-size: 0.95rem; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--danger);
+  color: #fff;
+  margin-inline-start: 6px;
+}
+
+/* --- محدد اللغة --- */
+.lang-switcher {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 100;
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(0,0,0,0.4);
+  padding: 0.35rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.lang-btn {
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: all var(--transition);
+  border: 1px solid transparent;
+}
+.lang-btn:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+.lang-btn.active {
+  color: #fff;
+  background: var(--accent);
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+
+/* --- صفحة الترحيب --- */
+.landing-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.glass-card {
+  background: var(--panel);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 460px;
+  padding: 2.25rem 2rem;
+  animation: fadeUp 700ms ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+
+.brand {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+.mark {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--bg-grad);
+  border: 2px solid var(--accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 0 24px var(--accent-glow);
+}
+.name {
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(to right, #fff, #cbd5e1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.35rem;
+}
+.tag {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.form-stack { display: flex; flex-direction: column; gap: 1.15rem; }
+
+.input-group { display: flex; flex-direction: column; gap: 0.45rem; }
+.input-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.input-group input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-sm);
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.95rem;
+  transition: all var(--transition);
+}
+.input-group input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.input-group input::placeholder { color: #64748b; }
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.35rem 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.divider::before, .divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--border);
+}
+.divider span { padding: 0 0.75rem; }
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.85rem;
+  margin-top: 1.5rem;
+}
+.feat {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.9rem 0.85rem;
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+}
+.feat-icon { font-size: 1.25rem; line-height: 1; margin-top: 2px; }
+.feat-title { font-size: 0.85rem; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.feat-desc { font-size: 0.72rem; color: var(--text-muted); line-height: 1.4; }
+
+.footer-note {
+  margin-top: 1.6rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* --- صفحة المكالمة --- */
+.call-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: 0.9rem 1.5rem;
+  background: rgba(11, 15, 25, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.header-left, .header-center, .header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.room-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: #a78bfa;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.room-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 10px var(--success);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.call-stats {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  background: var(--glass);
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+.call-stats span:first-child { color: var(--text); font-weight: 700; }
+
+.call-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* --- شبكة الفيديو --- */
+.video-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  overflow-y: auto;
+  align-content: start;
+}
+
+.video-wrap {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.45);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.video-wrap:hover { box-shadow: 0 0 0 3px var(--accent-glow); }
+
+.video-wrap video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* مرآة للفيديو الخاص بالمستخدم */
+}
+
+.video-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.6rem 0.85rem;
+  background: linear-gradient(transparent, rgba(0,0,0,0.85));
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+
+.video-status {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.status-chip {
+  font-size: 0.68rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  font-weight: 700;
+  background: rgba(0,0,0,0.65);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--success);
+}
+
+/* فيديو المستخدم الخاص (أصغر) */
+#user-video-own {
+  width: 160px;
+  height: 90px;
+  position: absolute;
+  bottom: 1.1rem;
+  left: 1rem;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+  z-index: 10;
+  transform: scaleX(-1);
+}
+#user-video-own .video-label { font-size: 0.75rem; padding: 0.4rem 0.6rem; }
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--text-muted);
+  padding: 3rem 1rem;
+}
+
+/* --- الدردشة الجانبية --- */
+.chat-sidebar {
+  width: 340px;
+  border-right: 1px solid var(--border);
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  z-index: 35;
+}
+.chat-header {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0,0,0,0.2);
+}
+.chat-header span { font-weight: 700; font-size: 0.9rem; color: var(--text); }
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.msg {
+  max-width: 80%;
+  padding: 0.65rem 0.9rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  animation: msgIn 300ms ease both;
+}
+@keyframes msgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.msg-own {
+  margin-inline-start: auto;
+  background: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: 3px;
+}
+.msg-other {
+  margin-inline-end: auto;
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 3px;
+}
+.msg-meta { font-size: 0.68rem; opacity: 0.7; margin-bottom: 3px; }
+
+.chat-input-wrap {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(0,0,0,0.2);
+}
+.chat-input-wrap input {
+  flex: 1;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 0.6rem 0.9rem;
+  font-size: 0.85rem;
+}
+.chat-input-wrap input:focus { outline: none; border-color: var(--border-focus); }
+
+/* --- شريط التحكم السفلي --- */
+.controls-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 50;
+  padding: 1rem 1.5rem 1.2rem;
+  background: linear-gradient(to top, rgba(11,15,25,0.95), transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.controls-left, .controls-center, .controls-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ctrl-btn {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  transition: all var(--transition);
+}
+.ctrl-btn:hover { background: var(--panel-hover); color: var(--text); border-color: rgba(255,255,255,0.25); }
+.ctrl-btn:active { transform: scale(0.94); }
+.ctrl-icon { font-size: 1.35rem; line-height: 1; }
+.ctrl-label { font-size: 0.62rem; line-height: 1.1; white-space: nowrap; }
+
+.ctrl-btn.ctrl-toggle.off { opacity: 0.55; filter: grayscale(0.6); }
+.ctrl-btn.ctrl-danger { background: var(--danger); color: #fff; border-color: transparent; box-shadow: 0 0 24px rgba(239,68,68,0.35); }
+.ctrl-btn.ctrl-danger:hover { background: var(--danger-hover); }
+
+/* --- إشعار مؤقت --- */
+.toast {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 0.85rem 1.4rem;
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.9rem;
+  box-shadow: var(--shadow);
+  animation: toastIn 350ms ease both;
+}
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+.toast.hidden { display: none !important; }
+
+/* --- شريط تمرير مخصص --- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* --- توافق الجوال --- */
+@media (max-width: 768px) {
+  .chat-sidebar { display: none !important; }
+  .header-right { gap: 0.4rem; }
+  .controls-bar { flex-wrap: wrap; padding-bottom: 2rem; justify-content: center; }
+  .controls-left, .controls-right { flex-wrap: wrap; justify-content: center; width: 100%; }
+  .controls-center { order: -1; width: 100%; justify-content: center; margin-bottom: 0.5rem; }
+  #user-video-own { width: 130px; height: 73px; bottom: 0.7rem; left: 0.7rem; }
+  .features { grid-template-columns: 1fr; }
+  .lang-switcher { left: 0.75rem; top: 0.75rem; }
+}

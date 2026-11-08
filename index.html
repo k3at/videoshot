@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>videoshot | Professional Browser Video Calls</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+  <!-- محدد اللغة (عربي / إنجليزي) -->
+  <div class="lang-switcher">
+    <button class="lang-btn active" data-lang="ar" aria-label="العربية">العربية</button>
+    <button class="lang-btn" data-lang="en" aria-label="English">English</button>
+  </div>
+
+  <!-- ==================== صفحة الترحيب ==================== -->
+  <section id="page-landing" class="page active">
+    <div class="landing-wrap">
+      <div class="glass-card landing-card">
+        <div class="brand">
+          <div class="mark">ق</div>
+          <div class="name" data-i18n="brand.name">videoshot</div>
+          <div class="tag" data-i18n="brand.tag">مكالمات فيديو عالية الجودة مباشرة عبر المتصفح</div>
+        </div>
+
+        <form id="form-start" class="form-stack">
+          <div class="input-group">
+            <label for="room-name" data-i18n="form.create.roomLabel">اسم الغرفة</label>
+            <input type="text" id="room-name" placeholder="مثال: غرفة-العائلة" required autocomplete="off" data-i18n-placeholder="form.create.roomPlaceholder" />
+          </div>
+
+          <div class="input-group">
+            <label for="user-name" data-i18n="form.create.nameLabel">اسمك (اختياري)</label>
+            <input type="text" id="user-name" placeholder="أحمد mercury" autocomplete="off" data-i18n-placeholder="form.create.namePlaceholder" />
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="btn-create" data-i18n="form.create.createBtn">إنشاء مكالمة جديدة</button>
+        </form>
+
+        <div class="divider"><span data-i18n="form.create.or">أو</span></div>
+
+        <form id="form-join" class="form-stack">
+          <div class="input-group">
+            <label for="room-join" data-i18n="form.join.roomLabel">رمز الانضمام إلى الغرفة</label>
+            <input type="text" id="room-join" placeholder="أدخل رمز الغرفة" required autocomplete="off" data-i18n-placeholder="form.join.roomPlaceholder" />
+          </div>
+
+          <div class="input-group">
+            <label for="user-name-join" data-i18n="form.join.nameLabel">اسمك (اختياري)</label>
+            <input type="text" id="user-name-join" placeholder="أحمد mercury" autocomplete="off" data-i18n-placeholder="form.join.namePlaceholder" />
+          </div>
+
+          <button type="submit" class="btn btn-outline btn-block" id="btn-join" data-i18n="form.join.joinBtn">الانضمام إلى المكالمة</button>
+        </form>
+
+        <div class="features">
+          <div class="feat">
+            <span class="feat-icon">🔒</span>
+            <div>
+              <div class="feat-title" data-i18n="features.p2p.title">اتصال مباشر (P2P)</div>
+              <div class="feat-desc" data-i18n="features.p2p.desc">تقنية WebRTC لنقل الفيديو والصوت بين المتصفحات مباشرة.</div>
+            </div>
+          </div>
+          <div class="feat">
+            <span class="feat-icon">📺</span>
+            <div>
+              <div class="feat-title" data-i18n="features.screen.title">مشاركة الشاشة</div>
+              <div class="feat-desc" data-i18n="features.screen.desc">شارك شاشتك أو نافذة تطبيق مع المشاركين أثناء المكالمة.</div>
+            </div>
+          </div>
+          <div class="feat">
+            <span class="feat-icon">💬</span>
+            <div>
+              <div class="feat-title" data-i18n="features.chat.title">دردشة فورية</div>
+              <div class="feat-desc" data-i18n="features.chat.desc">أرسل رسائل نصية للمشاركين خلال المكالمة دون مقاطعة الصوت.</div>
+            </div>
+          </div>
+        </div>
+
+        <p class="footer-note" data-i18n="landing.footer">لا يتطلب تسجيل دخول — يعمل على كروم، فايرفوكس، إيدج وسفاري.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== صفحة المكالمة ==================== -->
+  <section id="page-call" class="page hidden">
+    <header class="call-header">
+      <div class="header-left">
+        <button class="icon-btn" id="btn-back" title="إنهاء المكالمة والعودة" data-i18n-title="call.back">⟵</button>
+        <div class="room-badge">
+          <span class="room-dot"></span>
+          <span id="room-id-display">جـ-room</span>
+        </div>
+      </div>
+      <div class="header-center">
+        <div class="call-stats" id="call-stats">
+          <span id="timer">00:00</span> ·
+          <span id="participants-count">1 مشارك</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" id="btn-chat-toggle" title="فتح الدردشة" data-i18n-title="call.chat">💬 <span id="chat-badge" class="badge hidden">0</span></button>
+        <button class="icon-btn" id="btn-info" title="معلومات الاتصال" data-i18n-title="call.info">ℹ️</button>
+      </div>
+    </header>
+
+    <main class="call-body">
+      <div id="video-grid" class="video-grid">
+        <!-- الفيديو الخاص بك يظهر هنا ديناميكياً -->
+      </div>
+
+      <aside id="chat-sidebar" class="chat-sidebar hidden">
+        <div class="chat-header">
+          <span data-i18n="call.chatTitle">الدردشة</span>
+          <button class="icon-btn small" id="btn-chat-close">✕</button>
+        </div>
+        <div id="chat-messages" class="chat-messages"></div>
+        <div class="chat-input-wrap">
+          <input type="text" id="chat-input" placeholder="اكتب رسالة..." maxlength="300" data-i18n-placeholder="call.chatPlaceholder" />
+          <button class="btn btn-sm btn-primary" id="btn-chat-send" data-i18n="call.chatSend">إرسال</button>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="controls-bar">
+      <div class="controls-left">
+        <button class="ctrl-btn ctrl-toggle" id="btn-camera" title="الكاميرا" data-i18n-title="controls.camera">
+          <span class="ctrl-icon">📹</span>
+          <span class="ctrl-label" data-i18n="controls.cameraLabel">الكاميرا</span>
+        </button>
+        <button class="ctrl-btn ctrl-toggle" id="btn-mic" title="الميكروفون" data-i18n-title="controls.mic">
+          <span class="ctrl-icon">🎤</span>
+          <span class="ctrl-label" data-i18n="controls.micLabel">الميكروفون</span>
+        </button>
+        <button class="ctrl-btn ctrl-toggle" id="btn-screen" title="مشاركة الشاشة" data-i18n-title="controls.screen">
+          <span class="ctrl-icon">🖥️</span>
+          <span class="ctrl-label" data-i18n="controls.screenLabel">الشاشة</span>
+        </button>
+      </div>
+
+      <div class="controls-center">
+        <button class="ctrl-btn ctrl-danger" id="btn-hangup" title="إنهاء المكالمة" data-i18n-title="controls.hangup">
+          <span class="ctrl-icon">📞</span>
+          <span class="ctrl-label" data-i18n="controls.hangupLabel">إنهاء المكالمة</span>
+        </button>
+      </div>
+
+      <div class="controls-right">
+        <button class="ctrl-btn" id="btn-more" title="المزيد" data-i18n-title="controls.more">⋮</button>
+      </div>
+    </footer>
+  </section>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="assets/script.js"></script>
+</body>
+</html>

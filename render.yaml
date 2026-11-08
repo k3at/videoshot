@@ -1,0 +1,25 @@
+services:
+  # ================================================================
+  # خدمة الخادم (Node.js) — encargada بالإشارات (WebSocket)
+  # ================================================================
+  - type: web
+    name: videoshot-server
+    env: node
+    plan: free
+    region: oregon        # يمكنك تغييرها إلى منطقة أقرب إليك (مثلاً: frankfurt, singapore)
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    envVars:
+      - key: PORT
+        value: 10000
+
+  # ================================================================
+  # الموقع الثابت (Static Site) — واجهة المستخدم (HTML/CSS/JS)
+  # ================================================================
+  - type: web
+    name: videoshot-client
+    env: static
+    plan: free
+    region: oregon        # يفضل أن تكون نفس منطقة الخادم أعلاه
+    buildCommand: "echo 'Static site ready'"
+    staticPublishPath: "."
