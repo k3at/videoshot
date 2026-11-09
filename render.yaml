@@ -16,9 +16,7 @@ services:
   # ================================================================
   # الموقع الثابت (Static Site) — واجهة المستخدم (HTML/CSS/JS)
   # ================================================================
-  - type: web
+  - type: static
     name: videoshot-client
-    env: static
-    plan: free
     buildCommand: "echo 'Static site ready'"
     staticPublishPath: "."
