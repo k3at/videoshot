@@ -82,6 +82,17 @@
 
         <p class="footer-note" data-i18n="landing.footer">لا يتطلب تسجيل دخول — يعمل على كروم، فايرفوكس، إيدج وسفاري.</p>
 
+        <!-- قائمة الغرف (يتم تحديثها تلقائياً) -->
+        <div class="rooms-section" id="rooms-section">
+          <div class="rooms-header">
+            <span class="rooms-title" data-i18n="rooms.title">الغرف النشطة</span>
+            <button class="icon-btn small" id="btn-refresh-rooms" title="تحديث">🔄</button>
+          </div>
+          <div id="rooms-list" class="rooms-list">
+            <div class="rooms-empty" data-i18n="rooms.empty">لا توجد غرف نشطة حالياً</div>
+          </div>
+        </div>
+
         <div class="permission-hint" id="permission-hint">
           <span class="permission-icon">🔒</span>
           <span class="permission-text" data-i18n="permission.hint">انقر على زر "منح الإذن" للسماح بالوصول للكاميرا والميكروفون قبل بدء المكالمة</span>

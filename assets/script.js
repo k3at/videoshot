@@ -67,6 +67,9 @@
       'permission.retry': 'إعادة المحاولة',
       'permission.browser': 'إذا لم يظهر الطلب، انقر على أيقونة 🔒 في شريط العنوان ومنح الأذونات يدوياً.',
       'permission.hint': 'انقر على زر "منح الإذن" للسماح بالوصول للكاميرا والميكروفون قبل بدء المكالمة',
+      'rooms.title': 'الغرف النشطة',
+      'rooms.empty': 'لا توجد غرف نشطة حالياً',
+      'rooms.join': 'انضمام',
     },
     en: {
       'brand.name': 'videoshot',
@@ -127,6 +130,9 @@
       'permission.retry': 'Retry',
       'permission.browser': 'If no prompt appears, click the 🔒 icon in the address bar and grant permissions manually.',
       'permission.hint': 'Click "Grant Permission" to allow camera and microphone access before starting a call',
+      'rooms.title': 'Active Rooms',
+      'rooms.empty': 'No active rooms at the moment',
+      'rooms.join': 'Join',
     },
   };
 
@@ -222,7 +228,11 @@
   const chatSidebar = $('chat-sidebar');
   const toast = $('toast');
 
+  const roomsListEl = $('rooms-list');
+  const btnRefreshRooms = $('btn-refresh-rooms');
+
   let unreadChat = 0;
+  let currentRooms = [];
 
   /* -------------------- محدد اللغة -------------------- */
   document.querySelectorAll('.lang-btn').forEach((btn) => {
@@ -296,6 +306,10 @@
 
   /* -------------------- خادم الإشارات (WebSocket) -------------------- */
   function connectWS() {
+    // تجنب إنشاء اتصال مكرر
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
     ws = new WebSocket(WS_URL);
 
     ws.onopen = () => {
@@ -313,6 +327,10 @@
       if (!m || m.room !== roomId) return;
 
       switch (m.type) {
+        case 'rooms-list':
+          renderRoomsList(m.rooms);
+          break;
+
         case 'joined':
           if (m.peers) {
             m.peers.forEach((p) => {
@@ -391,6 +409,20 @@
     Object.values(pages).forEach((p) => p.classList.remove('active'));
     pages[name].classList.add('active');
     document.body.style.overflow = name === 'call' ? 'hidden' : '';
+
+    // إعادة الاتصال بخادم الإشارات при العودة لصفحة الترحيب (لتحديث قائمة الغرف)
+    if (name === 'landing') {
+      if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+        connectWS();
+        if (ws) {
+          ws.addEventListener('open', () => {
+            requestRoomList();
+          }, { once: true });
+        }
+      } else if (ws.readyState === WebSocket.OPEN) {
+        requestRoomList();
+      }
+    }
   }
 
   function toastShow(msg, ms = 3000) {
@@ -579,13 +611,25 @@
       // نستمر رغم عدم منح الإذن (يمكن الانضمام بدون وسائط)
     }
 
-    connectWS();
+    // إعادة الاتصال إذا لزم (في حالة قطع الاتصال)
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      connectWS();
+      await new Promise((resolve) => {
+        if (ws.readyState === WebSocket.OPEN) resolve();
+        else ws.addEventListener('open', resolve, { once: true });
+      });
+    }
 
     showPage('call');
     roomDisplay.textContent = room;
     callStart = Date.now();
     startTimer();
     updateParticipants();
+
+    // إظهار الدردشة تلقائياً
+    if (chatSidebar) {
+      chatSidebar.classList.remove('hidden');
+    }
 
     sendSignal({ type: 'join', name: myName });
   }
@@ -615,12 +659,17 @@
     const ownVideo = localVideoWrap.querySelector('video');
     if (ownVideo) ownVideo.srcObject = null;
 
-    showPage('landing');
+    // إخفاء الدردشة
+    if (chatSidebar) {
+      chatSidebar.classList.add('hidden');
+    }
+
     roomId = '';
     if (ws) {
       try { ws.close(); } catch (_) {}
       ws = null;
     }
+    showPage('landing');
     toastShow(t('toast.callEnded'));
   }
 
@@ -778,6 +827,45 @@
     }
   }
 
+  /* -------------------- قائمة الغرف (Room List) -------------------- */
+  function renderRoomsList(rooms) {
+    currentRooms = rooms || [];
+    if (!roomsListEl) return;
+
+    if (currentRooms.length === 0) {
+      roomsListEl.innerHTML = `<div class="rooms-empty">${t('rooms.empty')}</div>`;
+      return;
+    }
+
+    roomsListEl.innerHTML = '';
+    currentRooms.forEach((room) => {
+      const item = document.createElement('div');
+      item.className = 'room-item';
+      item.innerHTML = `
+        <span class="room-item-name">${escapeHtml(room.name || room.id)}</span>
+        <span class="room-item-count">${room.participants} ${room.participants > 1 ? t('participantsPlural') : t('participants')}</span>
+      `;
+      item.addEventListener('click', () => {
+        // انضمام للغرفة
+        const name = inpNameJoin.value.trim() || inpName.value.trim();
+        startCall(room.id, name);
+      });
+      roomsListEl.appendChild(item);
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function requestRoomList() {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'list-rooms' }));
+    }
+  }
+
   /* -------------------- معالجات الأحداث -------------------- */
   // زر منح الإذن (قبل المكالمة)
   const btnPreGrant = $('btn-pre-grant');
@@ -846,6 +934,24 @@
   empty.className = 'empty-state';
   empty.textContent = t('permission.title') ? 'ابدأ أو انضم إلى مكالمة' : 'Start or join a call';
   videoGrid.appendChild(empty);
+
+  // الاتصال بخادم الإشارات عند تحميل الصفحة (للحصول على قائمة الغرف)
+  connectWS();
+
+  // زر تحديث قائمة الغرف
+  if (btnRefreshRooms) {
+    btnRefreshRooms.addEventListener('click', () => {
+      requestRoomList();
+      toastShow(t('rooms.title') + '...', 1500);
+    });
+  }
+
+  // طلب قائمة الغرف بعد الاتصال
+  if (ws) {
+    ws.addEventListener('open', () => {
+      requestRoomList();
+    }, { once: true });
+  }
 
   console.log('videoshot جاهز — المعرف:', myId);
 })();
