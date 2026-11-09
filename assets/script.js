@@ -180,9 +180,15 @@
   /* -------------------- إعدادات -------------------- */
   // عدّل هذا الرابط لرابط خادمك على Render (مثلاً: 'wss://videoshot-server-xxxx.onrender.com')
   // للتطوير المحلي، استخدم: 'ws://localhost:3001'
-  const WS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'ws://localhost:3001'
-    : 'wss://' + window.location.hostname.replace('client', 'server');
+  let WS_URL;
+  const hostname = window.location.hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '') {
+    WS_URL = 'ws://localhost:3001';
+  } else {
+    // على Render/production: استبدال "client" بـ "server" في النطاق
+    WS_URL = 'wss://' + hostname.replace('client', 'server');
+  }
+  console.log('🌐 WS_URL:', WS_URL, '| hostname:', hostname);
   const STUN_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
 
   const myId = 'u_' + Math.random().toString(36).slice(2, 9);
