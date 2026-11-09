@@ -298,6 +298,23 @@ button {
   text-align: center;
 }
 
+/* --- تلميح الإذن (قبل المكالمة) --- */
+.permission-hint {
+  margin-top: 1.2rem;
+  padding: 0.85rem 1rem;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.permission-icon { font-size: 1.1rem; }
+.permission-text { flex: 1; line-height: 1.4; }
+.permission-hint .btn { flex-shrink: 0; font-size: 0.78rem; padding: 0.45rem 0.85rem; }
+
 /* --- صفحة المكالمة --- */
 .call-header {
   position: sticky;

@@ -52,10 +52,21 @@
       'toast.screenOff': 'تم إيقاف مشاركة الشاشة',
       'toast.screenFail': 'تعذر مشاركة الشاشة',
       'toast.mediaFail': 'تعذر الوصول للكاميرا أو الميكروفون. تأكد من منح الأذونات.',
+      'toast.mediaDenied': 'تم رفض الوصول للكاميرا/الميكروفون. يرجى منح الإذن من إعدادات المتصفح.',
+      'toast.mediaNotFound': 'لم يتم العثور على كاميرا أو ميكروفون. تأكد من توصيل الأجهزة.',
+      'toast.mediaInUse': 'الكاميرا أو الميكروفون قيد الاستخدام من تطبيق آخر.',
+      'toast.mediaNotSupported': 'متصفحك لا يدعم الوصول إلى الكاميرا/الميكروفون.',
       'toast.callEnded': 'تم إنهاء المكالمة',
       'toast.roomRequired': 'الرجاء إدخال رمز الغرفة',
+      'toast.permissionNeeded': 'يرجى منح إذن الوصول للكاميرا والميكروفون للمتابعة',
       'participants': 'مشارك',
       'participantsPlural': 'مشاركين',
+      'permission.title': 'الوصول للكاميرا والميكروفون',
+      'permission.desc': 'لبدء المكالمة، necesita videoshot الوصول للكاميرا والميكروفون الخاص بك. سيظهر لك المتصفح طلب إذن.',
+      'permission.allow': 'منح الإذن',
+      'permission.retry': 'إعادة المحاولة',
+      'permission.browser': 'إذا لم يظهر الطلب، انقر على أيقونة 🔒 في شريط العنوان ومنح الأذونات يدوياً.',
+      'permission.hint': 'انقر على زر "منح الإذن" للسماح بالوصول للكاميرا والميكروفون قبل بدء المكالمة',
     },
     en: {
       'brand.name': 'videoshot',
@@ -101,14 +112,29 @@
       'toast.screenOff': 'Screen sharing stopped',
       'toast.screenFail': 'Failed to share screen',
       'toast.mediaFail': 'Unable to access camera or microphone. Please grant permissions.',
+      'toast.mediaDenied': 'Access to camera/microphone was denied. Please grant permission in browser settings.',
+      'toast.mediaNotFound': 'No camera or microphone found. Please connect your devices.',
+      'toast.mediaInUse': 'Camera or microphone is in use by another application.',
+      'toast.mediaNotSupported': 'Your browser does not support camera/microphone access.',
       'toast.callEnded': 'Call ended',
       'toast.roomRequired': 'Please enter a room code',
+      'toast.permissionNeeded': 'Please grant camera and microphone access to continue',
       'participants': 'participant',
       'participantsPlural': 'participants',
+      'permission.title': 'Camera & Microphone Access',
+      'permission.desc': 'To start a call, videoshot needs access to your camera and microphone. Your browser will show a permission prompt.',
+      'permission.allow': 'Grant Permission',
+      'permission.retry': 'Retry',
+      'permission.browser': 'If no prompt appears, click the 🔒 icon in the address bar and grant permissions manually.',
+      'permission.hint': 'Click "Grant Permission" to allow camera and microphone access before starting a call',
     },
   };
 
   let currentLang = 'ar';
+
+  function t(key) {
+    return (translations[currentLang] && translations[currentLang][key]) || key;
+  }
 
   function setLang(lang) {
     currentLang = lang;
@@ -116,38 +142,32 @@
     html.lang = lang;
     html.dir = lang === 'ar' ? 'rtl' : 'ltr';
 
-    // تحديث أزرار اللغة
     document.querySelectorAll('.lang-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.lang === lang);
     });
 
-    // تحديث النصوص حسب data-i18n
     document.querySelectorAll('[data-i18n]').forEach((el) => {
       const key = el.dataset.i18n;
-      const translation = translations[lang] && translations[lang][key];
-      if (translation) el.textContent = translation;
+      const translation = t(key);
+      if (translation && translation !== key) el.textContent = translation;
     });
 
-    // تحديث титуك (title) للعناصر ذات data-i18n-title
     document.querySelectorAll('[data-i18n-title]').forEach((el) => {
       const key = el.dataset.i18nTitle;
-      const translation = translations[lang] && translations[lang][key];
-      if (translation) el.title = translation;
+      const translation = t(key);
+      if (translation && translation !== key) el.title = translation;
     });
 
-    // تحديث placeholders
     document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
       const key = el.dataset.i18nPlaceholder;
-      const translation = translations[lang] && translations[lang][key];
-      if (translation) el.placeholder = translation;
+      const translation = t(key);
+      if (translation && translation !== key) el.placeholder = translation;
     });
 
-    // تحديث عنوان الصفحة
     document.title = lang === 'ar'
       ? 'videoshot | مكالمات فيديو احترافية عبر المتصفح'
       : 'videoshot | Professional Browser Video Calls';
 
-    // تحديث إحصائيات المشاركين إن وُجدت
     updateParticipants();
   }
 
@@ -166,6 +186,7 @@
   let callStart = 0;
   let timerInterval = null;
   let ws = null;
+  let permissionGranted = false;
 
   const pcMap = new Map(); // peerId -> RTCPeerConnection
   const videoEls = new Map(); // peerId -> {wrap, video}
@@ -209,6 +230,69 @@
       setLang(btn.dataset.lang);
     });
   });
+
+  /* -------------------- التحقق من دعم المتصفح -------------------- */
+  function isMediaSupported() {
+    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  }
+
+  function isSecureContext() {
+    return window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  }
+
+  /* -------------------- طلب الأذونات (الكاميرا والميكروفون) -------------------- */
+  async function requestMediaPermissions() {
+    if (!isMediaSupported()) {
+      toastShow(t('toast.mediaNotSupported'), 5000);
+      console.error('getUserMedia not supported');
+      return false;
+    }
+
+    if (!isSecureContext()) {
+      toastShow('يجب فتح الموقع عبر HTTPS أو localhost للوصول للكاميرا والميكروفون.', 6000);
+      console.error('Not a secure context');
+      return false;
+    }
+
+    try {
+      // طلب الإذن (سيظهر prompt للمستخدم)
+      localStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+        audio: { echoCancellation: true, noiseSuppression: true },
+      });
+      permissionGranted = true;
+      attachStream(localVideoWrap.querySelector('video'), localStream, true);
+      updateToggleUI();
+      toastShow(t('toast.cameraOn') + ' ✅', 2000);
+      return true;
+    } catch (err) {
+      console.error('Media access error:', err.name, err.message);
+      permissionGranted = false;
+
+      let msgKey = 'toast.mediaFail';
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        msgKey = 'toast.mediaDenied';
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        msgKey = 'toast.mediaNotFound';
+      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        msgKey = 'toast.mediaInUse';
+      } else if (err.name === 'OverconstrainedError') {
+        // محاولة بقيود أقل
+        try {
+          localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          permissionGranted = true;
+          attachStream(localVideoWrap.querySelector('video'), localStream, true);
+          updateToggleUI();
+          return true;
+        } catch (e2) {
+          console.error('Fallback media access failed:', e2);
+        }
+      }
+
+      toastShow(t(msgKey), 6000);
+      return false;
+    }
+  }
 
   /* -------------------- خادم الإشارات (WebSocket) -------------------- */
   function connectWS() {
@@ -317,13 +401,40 @@
 
   /* -------------------- الوسائط المحلية -------------------- */
   async function initLocalMedia() {
-    try {
-      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      attachStream(localVideoWrap.querySelector('video'), localStream, true);
-      updateToggleUI();
-    } catch (err) {
-      console.error('فشل الوصول للكاميرا والميكروفون:', err);
-      toastShow(translations[currentLang]['toast.mediaFail']);
+    const ok = await requestMediaPermissions();
+    if (!ok) {
+      // عرض رسالة توضيحية في شبكة الفيديو
+      videoGrid.innerHTML = '';
+      const permDiv = document.createElement('div');
+      permDiv.className = 'empty-state';
+      permDiv.style.padding = '2rem';
+      permDiv.innerHTML = `
+        <div style="font-size:2rem;margin-bottom:1rem">🔒</div>
+        <div style="font-weight:700;margin-bottom:0.5rem">${t('permission.title')}</div>
+        <div style="color:var(--text-muted);margin-bottom:1.5rem;max-width:320px">${t('permission.desc')}</div>
+        <button class="btn btn-primary" id="btn-grant-permission">${t('permission.allow')}</button>
+        <div style="margin-top:1rem;font-size:0.75rem;color:var(--text-muted)">${t('permission.browser')}</div>
+      `;
+      videoGrid.appendChild(permDiv);
+
+      const btnGrant = document.getElementById('btn-grant-permission');
+      if (btnGrant) {
+        btnGrant.addEventListener('click', async () => {
+          const granted = await requestMediaPermissions();
+          if (granted) {
+            videoGrid.innerHTML = '';
+            const empty = document.createElement('div');
+            empty.className = 'empty-state';
+            empty.textContent = t('landing.footer') ? 'جاهز للمكالمة' : 'Ready for call';
+            videoGrid.appendChild(empty);
+            // إعادة إضافة video element
+            const ownVideo = localVideoWrap.querySelector('video');
+            if (ownVideo && localStream) {
+              attachStream(ownVideo, localStream, true);
+            }
+          }
+        });
+      }
     }
   }
 
@@ -462,6 +573,12 @@
     myName = name || 'زائر';
 
     await initLocalMedia();
+
+    if (!permissionGranted) {
+      toastShow(t('toast.permissionNeeded'), 5000);
+      // نستمر رغم عدم منح الإذن (يمكن الانضمام بدون وسائط)
+    }
+
     connectWS();
 
     showPage('call');
@@ -492,7 +609,7 @@
     videoGrid.innerHTML = '';
     const empty = document.createElement('div');
     empty.className = 'empty-state';
-    empty.textContent = translations[currentLang] ? 'انتهت المكالمة' : 'Call ended';
+    empty.textContent = t('toast.callEnded');
     videoGrid.appendChild(empty);
 
     const ownVideo = localVideoWrap.querySelector('video');
@@ -504,7 +621,7 @@
       try { ws.close(); } catch (_) {}
       ws = null;
     }
-    toastShow(translations[currentLang]['toast.callEnded']);
+    toastShow(t('toast.callEnded'));
   }
 
   function startTimer() {
@@ -519,8 +636,7 @@
 
   function updateParticipants() {
     const count = 1 + videoEls.size;
-    const t = translations[currentLang];
-    participantsEl.textContent = count + ' ' + (count > 1 ? t['participantsPlural'] : t['participants']);
+    participantsEl.textContent = count + ' ' + (count > 1 ? t('participantsPlural') : t('participants'));
   }
 
   /* -------------------- أزرار التحكم -------------------- */
@@ -542,25 +658,34 @@
   }
 
   async function toggleCamera() {
-    if (!localStream) return;
+    if (!localStream) {
+      toastShow(t('toast.permissionNeeded'), 3000);
+      return;
+    }
     const track = localStream.getVideoTracks()[0];
     if (!track) return;
     track.enabled = !track.enabled;
     updateToggleUI();
-    toastShow(track.enabled ? translations[currentLang]['toast.cameraOn'] : translations[currentLang]['toast.cameraOff']);
+    toastShow(track.enabled ? t('toast.cameraOn') : t('toast.cameraOff'));
   }
 
   async function toggleMic() {
-    if (!localStream) return;
+    if (!localStream) {
+      toastShow(t('toast.permissionNeeded'), 3000);
+      return;
+    }
     const track = localStream.getAudioTracks()[0];
     if (!track) return;
     track.enabled = !track.enabled;
     updateToggleUI();
-    toastShow(track.enabled ? translations[currentLang]['toast.micOn'] : translations[currentLang]['toast.micOff']);
+    toastShow(track.enabled ? t('toast.micOn') : t('toast.micOff'));
   }
 
   async function toggleScreen() {
-    if (!localStream) return;
+    if (!localStream) {
+      toastShow(t('toast.permissionNeeded'), 3000);
+      return;
+    }
 
     if (isScreenOn) {
       const videoTrack = localStream.getVideoTracks()[0];
@@ -580,7 +705,7 @@
       isScreenOn = false;
       btnScreen.classList.remove('off');
       btnScreen.querySelector('.ctrl-icon').textContent = '🖥️';
-      toastShow(translations[currentLang]['toast.screenOff']);
+      toastShow(t('toast.screenOff'));
       return;
     }
 
@@ -602,7 +727,7 @@
       isScreenOn = true;
       btnScreen.classList.add('off');
       btnScreen.querySelector('.ctrl-icon').textContent = '🖥️✅';
-      toastShow(translations[currentLang]['toast.screenOn']);
+      toastShow(t('toast.screenOn'));
 
       screenStream.getVideoTracks()[0].onended = () => {
         isScreenOn = false;
@@ -611,7 +736,7 @@
       };
     } catch (err) {
       console.error('فشل مشاركة الشاشة:', err);
-      toastShow(translations[currentLang]['toast.screenFail']);
+      toastShow(t('toast.screenFail'));
     }
   }
 
@@ -654,6 +779,20 @@
   }
 
   /* -------------------- معالجات الأحداث -------------------- */
+  // زر منح الإذن (قبل المكالمة)
+  const btnPreGrant = $('btn-pre-grant');
+  if (btnPreGrant) {
+    btnPreGrant.addEventListener('click', async () => {
+      const granted = await requestMediaPermissions();
+      if (granted) {
+        toastShow(t('toast.cameraOn') + ' ✅', 2000);
+        // إخفاء تلميح الإذن
+        const hint = $('permission-hint');
+        if (hint) hint.style.display = 'none';
+      }
+    });
+  }
+
   formStart.addEventListener('submit', async (e) => {
     e.preventDefault();
     const room = inpRoom.value.trim() || 'room-' + Math.random().toString(36).slice(2, 6);
@@ -666,7 +805,7 @@
     const room = inpRoomJoin.value.trim();
     const name = inpNameJoin.value.trim();
     if (!room) {
-      toastShow(translations[currentLang]['toast.roomRequired']);
+      toastShow(t('toast.roomRequired'));
       return;
     }
     await startCall(room, name);
@@ -696,7 +835,6 @@
   });
 
   /* -------------------- بدء التطبيق -------------------- */
-  // تطبيق اللغة المحفوظة أو الافتراضية (العربية)
   const savedLang = localStorage.getItem('videoshot_lang');
   if (savedLang && translations[savedLang]) {
     setLang(savedLang);
@@ -706,7 +844,7 @@
 
   const empty = document.createElement('div');
   empty.className = 'empty-state';
-  empty.textContent = translations[currentLang] ? 'ابدأ أو انضم إلى مكالمة' : 'Start or join a call';
+  empty.textContent = t('permission.title') ? 'ابدأ أو انضم إلى مكالمة' : 'Start or join a call';
   videoGrid.appendChild(empty);
 
   console.log('videoshot جاهز — المعرف:', myId);
