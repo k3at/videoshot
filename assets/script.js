@@ -178,7 +178,11 @@
   }
 
   /* -------------------- إعدادات -------------------- */
-  const WS_URL = 'ws://localhost:3001'; // عدّل هذا عند النشر على خادم خارجي
+  // عدّل هذا الرابط لرابط خادمك على Render (مثلاً: 'wss://videoshot-server-xxxx.onrender.com')
+  // للتطوير المحلي، استخدم: 'ws://localhost:3001'
+  const WS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'ws://localhost:3001'
+    : 'wss://' + window.location.hostname.replace('client', 'server');
   const STUN_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
 
   const myId = 'u_' + Math.random().toString(36).slice(2, 9);
@@ -310,15 +314,22 @@
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
       return;
     }
+    console.log('Connecting to WebSocket:', WS_URL);
     ws = new WebSocket(WS_URL);
 
     ws.onopen = () => {
-      console.log('متصل بخادم الإشارات');
+      console.log('متصل بخادم الإشارات ✅');
+      toastShow('متصل بخادم الإشارات ✅', 2000);
     };
 
-    ws.onclose = () => {
-      console.log('انقطع الاتصال بخادم الإشارات');
+    ws.onclose = (e) => {
+      console.log('انقطع الاتصال بخادم الإشارات ❌', e.code, e.reason);
       ws = null;
+    };
+
+    ws.onerror = (e) => {
+      console.error('خطأ في WebSocket:', e);
+      toastShow('فشل الاتصال بخادم الإشارات. تأكد من رابط WS_URL.', 5000);
     };
 
     ws.onmessage = (ev) => {
@@ -614,9 +625,24 @@
     // إعادة الاتصال إذا لزم (في حالة قطع الاتصال)
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       connectWS();
+      // انتظار الاتصال مع timeout (10 ثوانٍ)
       await new Promise((resolve) => {
-        if (ws.readyState === WebSocket.OPEN) resolve();
-        else ws.addEventListener('open', resolve, { once: true });
+        if (ws.readyState === WebSocket.OPEN) {
+          resolve();
+          return;
+        }
+        const timeout = setTimeout(() => {
+          console.warn('WebSocket connection timeout');
+          resolve();
+        }, 10000);
+        ws.addEventListener('open', () => {
+          clearTimeout(timeout);
+          resolve();
+        }, { once: true });
+        ws.addEventListener('error', () => {
+          clearTimeout(timeout);
+          resolve();
+        }, { once: true });
       });
     }
 
