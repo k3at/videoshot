@@ -6,7 +6,7 @@ services:
     name: videoshot-server
     env: node
     plan: free
-    region: oregon        # يمكنك تغييرها إلى منطقة أقرب إليك (مثلاً: frankfurt, singapore)
+    region: oregon
     buildCommand: "npm install"
     startCommand: "node server.js"
     envVars:
@@ -20,6 +20,5 @@ services:
     name: videoshot-client
     env: static
     plan: free
-    region: oregon        # يفضل أن تكون نفس منطقة الخادم أعلاه
     buildCommand: "echo 'Static site ready'"
     staticPublishPath: "."
